@@ -1,0 +1,175 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <regex>
+#include <unordered_set>
+
+using namespace std;
+
+// Token types
+enum class TokenType { KEYWORD, IDENTIFIER, LITERAL, OPERATOR, SEPARATOR, COMMENT, WHITESPACE };
+
+// Token structure
+struct Token {
+    TokenType type;
+    string value;
+};
+
+// Keywords set for classification
+unordered_set<string> keywords = {"int", "float", "char", "string", "if", "else", "return", "while", "for", "true", "false"};
+
+// Regular expressions for token types
+regex intPattern(R"(^[+-]?(0|[1-9][0-9]*)$)");
+regex floatPattern(R"(^[+-]?([0-9]+)?\.[0-9]+$)");
+regex stringPattern(R"(^\"(\\.|[^\"])*\"$)");
+regex boolPattern(R"(^true|false$)");
+regex charPattern(R"(^'([^\\]|\\[ntrb'\"\\])'$)");
+regex idenPattern(R"(^[a-zA-Z_][a-zA-Z0-9_]*$)");
+regex operatorPattern(R"([+\-*/%=<>!&|^~]+)");
+regex separatorPattern(R"([(){}\[\];,.])");
+
+// Function to get token type as a string
+string tokenTypeToString(TokenType type) {
+    switch (type) {
+        case TokenType::KEYWORD: return "KEYWORD";
+        case TokenType::IDENTIFIER: return "IDENTIFIER";
+        case TokenType::LITERAL: return "LITERAL";
+        case TokenType::OPERATOR: return "OPERATOR";
+        case TokenType::SEPARATOR: return "SEPARATOR";
+        case TokenType::COMMENT: return "COMMENT";
+        case TokenType::WHITESPACE: return "WHITESPACE";
+        default: return "UNKNOWN";
+    }
+}
+
+// Tokenize function
+vector<Token> tokenize(const string &input) {
+    vector<Token> tokens;
+    string token;
+    size_t i = 0;
+    while (i < input.size()) {
+        char c = input[i];
+
+        if (isspace(c)) {
+            i++;
+            continue;
+        }
+
+        // Comments
+        if (input.substr(i, 2) == "//") {
+            while (i < input.size() && input[i] != '\n') i++;
+            continue;
+        }
+        if (input.substr(i, 2) == "/*") {
+            i += 2;
+            while (i + 1 < input.size() && input.substr(i, 2) != "*/") i++;
+            i += 2;
+            continue;
+        }
+
+        // String literals
+        if (c == '"') {
+            token += c;
+            i++;
+            while (i < input.size() && input[i] != '"') {
+                token += input[i++];
+            }
+            token += '"';
+            tokens.push_back({TokenType::LITERAL, token});
+            token.clear();
+            i++;
+            continue;
+        }
+
+        // Character literals
+        if (c == '\'' && i + 2 < input.size() && input[i + 2] == '\'') {
+            token += input.substr(i, 3);
+            tokens.push_back({TokenType::LITERAL, token});
+            token.clear();
+            i += 3;
+            continue;
+        }
+
+        // Floating point and integer literals
+        if (isdigit(c)) {
+            token += c;
+            bool isFloat = false;
+            while (i + 1 < input.size() && (isdigit(input[i + 1]) || input[i + 1] == '.')) {
+                if (input[i + 1] == '.') isFloat = true;
+                token += input[++i];
+            }
+            tokens.push_back({TokenType::LITERAL, token});
+            token.clear();
+            i++;
+            continue;
+        }
+
+        // Identifiers and keywords
+        if (isalpha(c) || c == '_') {
+            while (i < input.size() && (isalnum(input[i]) || input[i] == '_')) {
+                token += input[i++];
+            }
+            if (keywords.count(token)) {
+                tokens.push_back({TokenType::KEYWORD, token});
+            } else {
+                tokens.push_back({TokenType::IDENTIFIER, token});
+            }
+            token.clear();
+            continue;
+        }
+
+        // Multi-character operators (e.g., >=, <=, ==, !=, +=, -=)
+        if (i + 1 < input.size() && regex_match(string(1, c), operatorPattern) && regex_match(string(1, input[i + 1]), operatorPattern)) {
+            tokens.push_back({TokenType::OPERATOR, string(1, c) + string(1, input[i + 1])});
+            i += 2;
+            continue;
+        }
+
+        // Single-character operators
+        if (regex_match(string(1, c), operatorPattern)) {
+            tokens.push_back({TokenType::OPERATOR, string(1, c)});
+            i++;
+            continue;
+        }
+
+        // Separators
+        if (regex_match(string(1, c), separatorPattern)) {
+            tokens.push_back({TokenType::SEPARATOR, string(1, c)});
+            i++;
+            continue;
+        }
+
+        i++;
+    }
+    return tokens;
+}
+
+// Read file function
+string readFile(const string &filePath) {
+    ifstream file(filePath);
+    if (!file.is_open()) {
+        cerr << "Error opening file: " << filePath << endl;
+        exit(1);
+    }
+    string content((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+    return content;
+}
+
+// Main function
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        cout << "Usage: ./LexicalAnalyzer <input_file>" << endl;
+        return 1;
+    }
+
+    string input = readFile(argv[1]);
+    cout << "Input Content: \n" << input << endl;
+
+    vector<Token> tokens = tokenize(input);
+
+    cout << "\nTokens:" << endl;
+    for (const auto &token : tokens) {
+        cout << "Token: " << token.value << " (" << tokenTypeToString(token.type) << ")" << endl;
+    }
+    return 0;
+}

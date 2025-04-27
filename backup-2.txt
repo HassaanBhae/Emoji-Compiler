@@ -1,0 +1,184 @@
+#include <iostream>
+#include <windows.h>
+
+#include <vector>
+#include <regex>
+#include <unordered_set>
+#include <locale>
+#include <codecvt>
+#include <io.h>
+#include <fcntl.h>
+
+using namespace std;
+
+string wstringToUtf8(const wstring &wstr) {
+    if (wstr.empty()) return string();
+    
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, NULL, 0, NULL, NULL);
+    string utf8Str(size_needed - 1, 0);  // -1 to remove null terminator
+    WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, &utf8Str[0], size_needed, NULL, NULL);
+    
+    return utf8Str;
+}
+
+// Token types
+enum class myTokenType { KEYWORD, IDENTIFIER, LITERAL, OPERATOR, SEPARATOR, COMMENT, WHITESPACE };
+
+// Token structure
+struct Token {
+    myTokenType type;
+    wstring value;
+};
+
+// Keywords (supports Unicode emoji-based keywords)
+unordered_set<wstring> keywords = {L"🔢", L"🌊", L"🔠", L"🔤", L"🤔", L"😅", L"🔙", L"🔁", L"➰", L"✅", L"❌"};
+
+// Regular expressions for token classification
+wregex intPattern(LR"(^[+-]?(0|[1-9][0-9]*)$)");
+wregex floatPattern(LR"(^[+-]?([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)$)");
+wregex stringPattern(LR"(^\"(\\.|[^\"])*\"$)");
+wregex boolPattern(LR"(^(✅|❌)$)");
+wregex idenPattern(LR"(^[a-zA-Z_][a-zA-Z0-9_]*$)");
+wregex operatorPattern(LR"([\+\-\*/%=<>!&|^~]+)");
+wregex separatorPattern(LR"([\(\)\{\}\[\];,.])");
+
+// Function to convert myTokenType to string
+wstring tokenTypeToString(myTokenType type) {
+    switch (type) {
+        case myTokenType::KEYWORD: return L"KEYWORD";
+        case myTokenType::IDENTIFIER: return L"IDENTIFIER";
+        case myTokenType::LITERAL: return L"LITERAL";
+        case myTokenType::OPERATOR: return L"OPERATOR";
+        case myTokenType::SEPARATOR: return L"SEPARATOR";
+        case myTokenType::COMMENT: return L"COMMENT";
+        case myTokenType::WHITESPACE: return L"WHITESPACE";
+        default: return L"UNKNOWN";
+    }
+}
+
+// Tokenization function
+vector<Token> tokenize(const wstring &input) {
+    vector<Token> tokens;
+    wstring token;
+    size_t i = 0;
+
+    while (i < input.size()) {
+        wchar_t c = input[i];
+
+        if (iswspace(c)) { // Handle whitespace
+            i++;
+            continue;
+        }
+
+        // Comments
+        if (input.substr(i, 2) == L"//") {
+            while (i < input.size() && input[i] != L'\n') i++;
+            continue;
+        }
+        if (input.substr(i, 2) == L"/*") {
+            i += 2;
+            while (i + 1 < input.size() && input.substr(i, 2) != L"*/") i++;
+            i += 2;
+            continue;
+        }
+
+        // String literals
+        if (c == L'"') {
+            token += c;
+            i++;
+            while (i < input.size() && input[i] != L'"') {
+                token += input[i++];
+            }
+            token += L'"';
+            tokens.push_back({myTokenType::LITERAL, token});
+            token.clear();
+            i++;
+            continue;
+        }
+
+        // Boolean literals (✅, ❌)
+        if (i + 1 < input.size() && (input.substr(i, 1) == L"✅" || input.substr(i, 1) == L"❌")) {
+            token = input.substr(i, 1);
+            tokens.push_back({myTokenType::LITERAL, token});
+            token.clear();
+            i++;
+            continue;
+        }
+
+        // Floating point and integer literals
+        if (iswdigit(c)) {
+            token += c;
+            bool isFloat = false;
+            while (i + 1 < input.size() && (iswdigit(input[i + 1]) || input[i + 1] == L'.')) {
+                if (input[i + 1] == L'.') isFloat = true;
+                token += input[++i];
+            }
+            tokens.push_back({myTokenType::LITERAL, token});
+            token.clear();
+            i++;
+            continue;
+        }
+
+        // Identifiers and keywords (handles Unicode including emoji)
+        if (iswalpha(c) || c == L'_' || (c >= 0x1F600 && c <= 0x1F64F)) { // Unicode emoji range
+            while (i < input.size() && (iswalnum(input[i]) || input[i] == L'_' || (input[i] >= 0x1F600 && input[i] <= 0x1F64F))) {
+                token += input[i++];
+            }
+            if (keywords.count(token)) {
+                tokens.push_back({myTokenType::KEYWORD, token});
+            } else {
+                if (regex_match(token, idenPattern)) {
+                    tokens.push_back({myTokenType::IDENTIFIER, token});
+                }
+            }
+            token.clear();
+            continue;
+        }
+
+        // Operators
+        if (regex_match(wstring(1, c), operatorPattern)) {
+            token += c;
+            if (i + 1 < input.size() && regex_match(wstring(1, input[i + 1]), operatorPattern)) {
+                token += input[++i]; // Handle multi-character operators
+            }
+            tokens.push_back({myTokenType::OPERATOR, token});
+            token.clear();
+            i++;
+            continue;
+        }
+
+        // Separators
+        if (regex_match(wstring(1, c), separatorPattern)) {
+            tokens.push_back({myTokenType::SEPARATOR, wstring(1, c)});
+            i++;
+            continue;
+        }
+
+        i++;
+    }
+    return tokens;
+}
+
+// Main function
+int main() {
+    SetConsoleOutputCP(CP_UTF8);
+    std::cout << "1) ✊\n";
+    std::cout << "2) ✋\n";
+    std::cout << "3) ✌️\n";
+
+    wstring content = L"🔢 x = 10;\n🌊 y = 3.14;\n🔠 name = \"Hello\";\n// This is a comment\n🔁 loop😅 = ✅;";
+
+    std::cout << "Input Content:\n" << wstringToUtf8(content) << "\n\n";
+
+    // Tokenize the input
+    vector<Token> tokens = tokenize(content);
+
+    // Print tokens
+    for (const Token &t : tokens) {
+        std::cout << wstringToUtf8(tokenTypeToString(t.type)) << ": " 
+                  << wstringToUtf8(t.value) << std::endl;
+    }
+
+    return 0;
+
+}
