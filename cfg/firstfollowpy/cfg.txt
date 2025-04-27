@@ -1,0 +1,96 @@
+<program> -> <dec_list> <main> <dec_list>
+<main> -> main ( ) { <mst> }
+<dec_list> -> <dec> <dec_list> | ε
+<dec> -> <struct_dec> | <var_dec>
+<struct_dec> -> <access_modifier> struct ID <extends> { <struct_body> }
+<access_modifier> -> public | private
+<extends> -> extends ID | ε
+<struct_body> -> <struct_member_list>
+<struct_member_list> -> <struct_member> <struct_member_list> | ε
+<struct_member> -> DT ID <dt_member_tail> | constructor ( <param_list> ) <body>
+<dt_member_tail> -> ( <param_list> ) <body> | <var_init> <var_dec_tail> ;
+<method_dec> -> DT ID ( <param_list> ) <body>
+<field_dec> -> <var_dec>
+<constructor_dec> -> ID ( <param_list> ) <body>
+<var_dec> -> DT <var_dec_list> ;
+<var_dec_list> -> ID <var_init> <var_dec_tail>
+<var_dec_tail> -> , ID <var_init> <var_dec_tail> | ε
+<var_init> -> = <expr> | ε
+<param_list> -> <param> <param_list_tail> | ε
+<param_list_tail> -> , <param> <param_list_tail> | ε
+<param> -> DT ID
+<body> -> { <mst> }
+<array_dec> -> DT ID [ ] = { <arr_items> } ;
+<array_struct_dec> -> ID ID [ ] = { <arr_items> } ;
+<arr_items> -> <arr_item_list> | ε
+<arr_item_list> -> <expr> <arr_item_tail>
+<arr_item_tail> -> , <expr> <arr_item_tail> | ε
+<mst> -> <sst> <mst> | ε
+<sst> -> <while_stmt> | <for_stmt> | <if_stmt> | <do_while_stmt> | 
+       <try_stmt> | <throw_stmt> | <return_stmt> | <continue_stmt> | 
+       <break_stmt> | <var_dec> | <expr_stmt>
+<expr_stmt> -> <expr> ;
+<while_stmt> -> while ( <expr> ) <stmt_body>
+<stmt_body> -> ; | <sst> | { <mst> }
+<for_stmt> -> for ( <for_init> ; <for_cond> ; <for_update> ) <stmt_body>
+<for_init> -> <var_dec> | <expr> ; | ;
+<for_cond> -> <expr> | ε
+<for_update> -> <expr_list> | ε
+<if_stmt> -> if ( <expr> ) <stmt_body> <else_part>
+<else_part> -> else <stmt_body> | ε
+<do_while_stmt> -> do <stmt_body> while ( <expr> ) ;
+<this_stmt> -> this <this_target> ;
+<this_target> -> ID | <func_call>
+<func_call> -> ID ( <arg_list> )
+<arg_list> -> <arg> <arg_list_tail> | ε
+<arg_list_tail> -> , <arg> <arg_list_tail> | ε
+<arg> -> <expr>
+<expr_list> -> <expr> <expr_list_tail>
+<expr_list_tail> -> , <expr> <expr_list_tail> | ε
+<expr> -> <assign_expr>
+<assign_expr> -> <or_expr> <assign_expr_tail>
+<assign_expr_tail> -> <assign_op> <assign_expr> | ε
+<assign_op> -> = | += | -= | *= | /= | %=
+<or_expr> -> <and_expr> <or_expr_tail>
+<or_expr_tail> -> OR <and_expr> <or_expr_tail> | ε
+<and_expr> -> <equality_expr> <and_expr_tail>
+<and_expr_tail> -> AND <equality_expr> <and_expr_tail> | ε
+<equality_expr> -> <relational_expr> <equality_expr_tail>
+<equality_expr_tail> -> <eq_op> <relational_expr> <equality_expr_tail> | ε
+<eq_op> -> == | !=
+<relational_expr> -> <additive_expr> <relational_expr_tail>
+<relational_expr_tail> -> <rel_op> <additive_expr> <relational_expr_tail> | ε
+<rel_op> -> < | > | <= | >=
+<additive_expr> -> <multiplicative_expr> <additive_expr_tail>
+<additive_expr_tail> -> <add_op> <multiplicative_expr> <additive_expr_tail> | ε
+<add_op> -> + | -
+<multiplicative_expr> -> <unary_expr> <multiplicative_expr_tail>
+<multiplicative_expr_tail> -> <mult_op> <unary_expr> <multiplicative_expr_tail> | ε
+<mult_op> -> * | / | %
+<unary_expr> -> <prefix_op> <unary_expr> | <postfix_expr>
+<prefix_op> -> ++ | -- | !
+<postfix_expr> -> <primary> <postfix_expr_tail>
+<postfix_expr_tail> -> <postfix_op> | ε
+<postfix_op> -> ++ | --
+<primary> -> <literal> | <var_access> | ( <expr> )
+<var_access> -> ID <var_access_tail>
+<var_access_tail> -> <array_access> | <func_call_expr> | ε
+<array_access> -> [ <expr> ]
+<func_call_expr> -> ( <arg_list> )
+<try_stmt> -> try { <mst> } <catch_list>
+<catch_list> -> <catch_item> <catch_list_tail>
+<catch_item> -> catch ( ID ID ) { <mst> }
+<catch_list_tail> -> <catch_item> <catch_list_tail> | ε
+<throw_stmt> -> throw <throw_value> ;
+<throw_value> -> <expr> | new ID ( <arg_list> )
+<return_stmt> -> return <return_value> ;
+<return_value> -> <expr> | ε
+<continue_stmt> -> continue ;
+<break_stmt> -> break ;
+<literal> -> <int_lit> | <float_lit> | <char_lit> | <string_lit> | <bool_lit> | null
+<int_lit> -> INT_CONST
+<float_lit> -> FLOAT_CONST
+<char_lit> -> CHAR_CONST
+<string_lit> -> STRING_CONST
+<bool_lit> -> true | false
+
