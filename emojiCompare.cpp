@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+using namespace std;
 
 void identifyEmoji(const std::string& emoji) {
     if (emoji == "😊") {
@@ -16,5 +17,9 @@ void identifyEmoji(const std::string& emoji) {
 int main() {
     std::string input_emoji = "😊";  // You can change this to test different emojis
     identifyEmoji(input_emoji);
+    string emojiCout1 = "✅";
+    // string emojiCout2 = ✅;
+    cout <<"EMoji COUt:"<< emojiCout1 << "\n";
+    // cout << emojiCout2;
     return 0;
 }

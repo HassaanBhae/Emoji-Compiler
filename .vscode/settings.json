@@ -56,6 +56,7 @@
         "unordered_set": "cpp",
         "regex": "cpp",
         "sstream": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "fstream": "cpp"
     }
 }

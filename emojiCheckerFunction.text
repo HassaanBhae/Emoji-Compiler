@@ -1,0 +1,34 @@
+        //EMOJI CHECKER
+// ----------------------------------------------------------------------------------------------
+        if (firstByte == 0xF0) { 
+            string emoji = input.substr(i, 4);
+            cout << "c is 4 byte Emoji:" << emoji << "\n";
+            token = emoji;
+            tokens.push_back({myTokenType::KEYWORD, token, line}); 
+            i += 3;
+        }
+        else if (firstByte == 0xE2) { 
+            string emoji = input.substr(i, 3);
+
+            //True check ✅
+            // if (emoji == "\xE2\x9C\x85") {
+            if (emoji == "✅") {
+                cout << "its a True" << "\xE2\x9C\x85" << "\n";
+                token = emoji;
+                tokens.push_back({myTokenType::LITERAL, token, line}); 
+            }
+            //False Check ❌
+            else if (emoji == "\xE2\x9D\x8C") {
+                cout << "its a False" << "\xE2\x9D\x8C" << "\n";
+                token = emoji;
+                tokens.push_back({myTokenType::LITERAL, token, line});
+            }
+            else {
+                cout << "c is 3 byte Emoji:" << emoji << "\n";
+                token = emoji;
+                tokens.push_back({myTokenType::KEYWORD, token, line});
+            }
+            i += 2;
+        }
+// ---------------------------------------------------------------------------------------------------
+ 
