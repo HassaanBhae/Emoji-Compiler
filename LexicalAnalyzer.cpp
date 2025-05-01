@@ -1,111 +1,347 @@
-    #include <iostream>
-    #include <windows.h>
-    #include <vector>
-    #include <regex>
-    #include <unordered_set>
-    #include <string>
-    #include <fstream>
+#include <iostream>
+#include <windows.h>
+#include <vector>
+#include <regex>
+#include <unordered_set>
+#include <string>
+#include <fstream>
 
-    using namespace std;
-        
-    // Token types
-    enum class myTokenType { KEYWORD, IDENTIFIER, LITERAL, OPERATOR, SEPARATOR, COMMENT, WHITESPACE ,ACCESSMODIFIER ,DT ,ID,
-        IntConst, FloatConst, CharConst, StringConst, BoolConst, 
-        If, Else, Elseif,
-        Do, While, For,
-        Return,
-        Class, Interface,Abstract,
-        AccessModifier, Static,Final ,
-        Extends, Implements,
-        This, Super, New,
-        Try, Catch, Finally, Throw,
-        Comma, Colon, SemiColon, DBQoute, Qoute,
-        OpenRoundBrkt, CloseRoundBrkt, OpenSqrBrkt, CloseSqrBrkt, OpenCurlyBrkt, CloseCurlyBrkt,
-        Dot,
-        AddSub, Increase_Decrease, MulDivMod,
-        RO1, RO2,
-        Equal, CompoundAssign,
-        AND, OR, NOT,
-        InvalidInput,
-        $, Break, Continue,
-        Void , Main,Const,
-        object };
+// using namespace std;
+// using namespace std::;
+    
+// Token types
+enum class myTokenType { KEYWORD, IDENTIFIER, LITERAL, OPERATOR, SEPARATOR, COMMENT, WHITESPACE  ,DT ,ID,
+    If, Else, Elseif,Switch,Case,Default,
+    Do, While, For,
+    Return,
+    Class,Struct, Interface,Abstract,
+    AccessModifier, Static,Final ,Global,
+    Extends, 
+    This,  New,
+    Try, Catch, Finally, Throw,
+    Comma, Colon, SemiColon, DBQoute, Qoute,
+    OpenRoundBrkt, CloseRoundBrkt, OpenSqrBrkt, CloseSqrBrkt, OpenCurlyBrkt, CloseCurlyBrkt,
+    Dot,
+    AddSub, Increase_Decrease, MulDivMod,
+    RO1, RO2,
+    Equal, CompoundAssign,
+    AND, OR, NOT,Input,Print,
+    InvalidInput,
+    $, Break, Continue,
+    Void , Main,Const,
+    object };
 
-    // Token structure
-    struct Token {
-        myTokenType type;
-        string value;
-        int line;
-    };
+// Token structure
+struct Token {
+    myTokenType type;
+    std::string value;
+    int line;
+};
 
-    // Keywords (supports Unicode emoji-based keywords)
-    unordered_set<string> keywords = {"🔢", "🌊", "🔠", "🔤", "🤔", "😅", "🔙", "🔁", "➰", "✅", "❌"};
+// Keywords (supports Unicode emoji-based keywords)
+std::unordered_set<std::string> keywords = {"🔢", "🌊", "🔠", "🔤", "🤔", "😅", "🔙", "🔁", "➰", "✅", "❌"};
 
-    // Regular expressions for token classification
-    regex intPattern(R"(^[+-]?(0|[1-9][0-9]*)$)");
-    regex floatPattern(R"(^[+-]?([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)$)");
-    regex stringPattern(R"(^\"(\\.|[^\"])*\"$)");
-    regex boolPattern(R"(^(✅|❌)$)");
-    // regex idenPattern(R"(^[a-z]+$)");
-    // regex idenPattern(R"(^[a-zA-Z]+$)");
-    regex idenPattern(R"(^[a-zA-Z][a-zA-Z_]*$)");
-    regex operatorPattern(R"([\+\-\*/%=<>!&|^~]+)");
-    regex separatorPattern(R"([\(\)\{\}\[\];,.])");
+// Regular expressions for token classification
+std::regex intPattern(R"(^[+-]?(0|[1-9][0-9]*)$)");
+std::regex floatPattern(R"(^[+-]?([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)$)");
+std::regex stringPattern(R"(^\"(\\.|[^\"])*\"$)");
+std::regex boolPattern(R"(^(✅|❌)$)");
+// regex idenPattern(R"(^[a-z]+$)");
+// regex idenPattern(R"(^[a-zA-Z]+$)");
+// std::regex idenPattern(R"(^[a-zA-Z][a-zA-Z_]*$)");
+std::regex idenPattern(R"(^[a-zA-Z][a-zA-Z_]*$)");
+std::regex operatorPattern(R"([\+\-\*/%=<>!&|^~]+)");
+std::regex separatorPattern(R"([\(\)\{\}\[\];,.])");
 
-    // Function to convert myTokenType to string
-    string tokenTypeToString(myTokenType type) {
-        switch (type) {
-            case myTokenType::KEYWORD: return "KEYWORD";
-            case myTokenType::IDENTIFIER: return "IDENTIFIER";
-            case myTokenType::LITERAL: return "LITERAL";
-            case myTokenType::OPERATOR: return "OPERATOR";
-            case myTokenType::SEPARATOR: return "SEPARATOR";
-            case myTokenType::COMMENT: return "COMMENT";
-            case myTokenType::WHITESPACE: return "WHITESPACE";
-            default: return "UNKNOWN";
-        }
+// Function to convert myTokenType to string
+std::string tokenTypeToString(myTokenType type) {
+    switch (type) {
+        case myTokenType::KEYWORD: return "KEYWORD";
+        case myTokenType::IDENTIFIER: return "IDENTIFIER";
+        case myTokenType::LITERAL: return "LITERAL";
+        case myTokenType::OPERATOR: return "OPERATOR";
+        case myTokenType::SEPARATOR: return "SEPARATOR";
+        case myTokenType::COMMENT: return "COMMENT";
+        case myTokenType::WHITESPACE: return "WHITESPACE";
+        case myTokenType::DT: return "DT";
+        case myTokenType::ID: return "ID";
+        case myTokenType::If: return "If";
+        case myTokenType::Else: return "Else";
+        case myTokenType::Elseif: return "Elseif";
+        case myTokenType::Switch: return "Switch";
+        case myTokenType::Case: return "Case";
+        case myTokenType::Default: return "Default";
+        case myTokenType::Do: return "Do";
+        case myTokenType::While: return "While";
+        case myTokenType::For: return "For";
+        case myTokenType::Return: return "Return";
+        case myTokenType::Class: return "Class";
+        case myTokenType::Struct: return "Struct";
+        case myTokenType::Interface: return "Interface";
+        case myTokenType::Abstract: return "Abstract";
+        case myTokenType::AccessModifier: return "AccessModifier";
+        case myTokenType::Static: return "Static";
+        case myTokenType::Final: return "Final";
+        case myTokenType::Global: return "Global";
+        case myTokenType::Extends: return "Extends";
+        case myTokenType::This: return "This";
+        case myTokenType::New: return "New";
+        case myTokenType::Try: return "Try";
+        case myTokenType::Catch: return "Catch";
+        case myTokenType::Finally: return "Finally";
+        case myTokenType::Throw: return "Throw";
+        case myTokenType::Comma: return "Comma";
+        case myTokenType::Colon: return "Colon";
+        case myTokenType::SemiColon: return "SemiColon";
+        case myTokenType::DBQoute: return "DBQoute";
+        case myTokenType::Qoute: return "Qoute";
+        case myTokenType::OpenRoundBrkt: return "OpenRoundBrkt";
+        case myTokenType::CloseRoundBrkt: return "CloseRoundBrkt";
+        case myTokenType::OpenSqrBrkt: return "OpenSqrBrkt";
+        case myTokenType::CloseSqrBrkt: return "CloseSqrBrkt";
+        case myTokenType::OpenCurlyBrkt: return "OpenCurlyBrkt";
+        case myTokenType::CloseCurlyBrkt: return "CloseCurlyBrkt";
+        case myTokenType::Dot: return "Dot";
+        case myTokenType::AddSub: return "AddSub";
+        case myTokenType::Increase_Decrease: return "Increase_Decrease";
+        case myTokenType::MulDivMod: return "MulDivMod";
+        case myTokenType::RO1: return "RO1";
+        case myTokenType::RO2: return "RO2";
+        case myTokenType::Equal: return "Equal";
+        case myTokenType::CompoundAssign: return "CompoundAssign";
+        case myTokenType::AND: return "AND";
+        case myTokenType::OR: return "OR";
+        case myTokenType::NOT: return "NOT";
+        case myTokenType::Input: return "Input";
+        case myTokenType::Print: return "Print";
+        case myTokenType::InvalidInput: return "InvalidInput";
+        case myTokenType::$: return "$";
+        case myTokenType::Break: return "Break";
+        case myTokenType::Continue: return "Continue";
+        case myTokenType::Void: return "Void";
+        case myTokenType::Main: return "Main";
+        case myTokenType::Const: return "Const";
+        case myTokenType::object: return "object";
+        default: return "UNKNOWN";
     }
+}
 
-    // Tokenization function
-vector<Token> tokenize(const string &input) {
-    cout << "Tokenization Started!\n";
-    vector<Token> tokens;
-    string token;
+
+// Tokenization function
+std::vector<Token> tokenize(const std::string &input) {
+    std::cout << "Tokenization Started!\n";
+    std::vector<Token> tokens;
+    std::string token;
     size_t i = 0;
     int line = 1; // 🔥 Track the current line
 
     while (i < input.size()) {
-        string c(1, input[i]);
+        std::string c(1, input[i]);
         unsigned char firstByte = static_cast<unsigned char>(input[i]);
         //EMOJI CHECKER
-// ----------------------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------
+        //IF Starts with E2 BYTE
+        if (firstByte == 0xE2) { 
+            std::string emoji = input.substr(i, 3);
+            if (emoji == "\xE2\x9C\x85") {      //✅
+                std::cout << "its a True" << "\xE2\x9C\x85" << "\n";
+                token = "\xE2\x9C\x85";
+                tokens.push_back({myTokenType::Const, token, line}); 
+                i += 2;
+            }
+            else if (emoji == "\xE2\x9D\x8C") {         //❌
+                std::cout << "its a False" << "\xE2\x9D\x8C" << "\n";
+                token = "\xE2\x9D\x8C";
+                tokens.push_back({myTokenType::Const, token, line}); 
+                i += 2;
+            }
+            else if (emoji == "\xE2\x9E\xB0") {     //➰
+                std::cout << "its a For" << "\xE2\x9E\xB0" << "\n";
+                token = "\xE2\x9E\xB0";
+                tokens.push_back({myTokenType::For, token, line}); 
+                i += 2;
+            }
+            else if (emoji == "\xE2\x9E\xBF") {     //➿
+                std::cout << "its a Do" << "\xE2\x9E\xBF" << "\n";
+                token = "\xE2\x9E\xBF";
+                tokens.push_back({myTokenType::Do, token, line}); 
+                i += 2;
+            }
+            else if (emoji == "\xE2\x9C\x8D") {     //✍
+                std::cout << "its a input" << "\xE2\x9C\x8D" << "\n";
+                token = "\xE2\x9C\x8D";
+                tokens.push_back({myTokenType::Input, token, line}); 
+                i += 2;
+            }
+            else if (emoji == "\xE2\x81\x89") {     //⁉️
+                std::string emoji = input.substr(i, 6);
+                std::cout << "its a bool" << "\xE2\x81\x89\xEF\xB8\x8F" << "\n";
+                token = "\xE2\x81\x89\xEF\xB8\x8F";
+                tokens.push_back({myTokenType::DT, token, line}); 
+                i += 5;
+            }
+            token.clear();
+        }
+        //IF Starts with F0 BYTE
         if (firstByte == 0xF0) { 
-            string emoji = input.substr(i, 4);
-            cout << "c is 4 byte Emoji:" << emoji << "\n";
-            tokens.push_back({myTokenType::KEYWORD, emoji, line}); 
-            i += 3;
+            std::string emoji = input.substr(i, 4);
+            if (emoji == "\xF0\x9F\x94\xA2") {  //🔢
+                std::cout << "its a int" << "\xF0\x9F\x94\xA2" << "\n";
+                token = "\xF0\x9F\x94\xA2";
+                tokens.push_back({myTokenType::DT, token, line}); 
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x8C\x8A") {  // 🌊
+                std::cout << "its a float" << "\xF0\x9F\x8C\x8A" << "\n";
+                token = "\xF0\x9F\x8C\x8A";
+                tokens.push_back({myTokenType::DT, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x87\xA9") {  // 🇩
+                std::cout << "its a double" << "\xF0\x9F\x87\xA9" << "\n";
+                token = "\xF0\x9F\x87\xA9";
+                tokens.push_back({myTokenType::DT, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x94\xA0") {  // 🔠
+                std::cout << "its a char" << "\xF0\x9F\x94\xA0" << "\n";
+                token = "\xF0\x9F\x94\xA0";
+                tokens.push_back({myTokenType::DT, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x94\xA4") {  // 🔤
+                std::cout << "its a string" << "\xF0\x9F\x94\xA4" << "\n";
+                token = "\xF0\x9F\x94\xA4";
+                tokens.push_back({myTokenType::DT, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x94\x80") {  // 🔀
+                std::cout << "its a switch" << "\xF0\x9F\x94\x80" << "\n";
+                token = "\xF0\x9F\x94\x80";
+                tokens.push_back({myTokenType::Switch, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x94\x92") {  // 🔒
+                std::cout << "its a const" << "\xF0\x9F\x94\x92" << "\n";
+                token = "\xF0\x9F\x94\x92";
+                tokens.push_back({myTokenType::Const, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x9A\xAB") {  // 🚫
+                std::cout << "its a void" << "\xF0\x9F\x9A\xAB" << "\n";
+                token = "\xF0\x9F\x9A\xAB";
+                tokens.push_back({myTokenType::Void, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x90\xAB") {  // 🐫
+                std::cout << "its a case" << "\xF0\x9F\x90\xAB" << "\n";
+                token = "\xF0\x9F\x90\xAB";
+                tokens.push_back({myTokenType::Case, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x94\x81") {  // 🔁
+                std::cout << "its a while" << "\xF0\x9F\x94\x81" << "\n";
+                token = "\xF0\x9F\x94\x81";
+                tokens.push_back({myTokenType::While, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x92\x94") {  // 💔
+                std::cout << "its a break" << "\xF0\x9F\x92\x94" << "\n";
+                token = "\xF0\x9F\x92\x94";
+                tokens.push_back({myTokenType::Break, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\xA7\xA1") {  // 🧡
+                std::cout << "its a continue" << "\xF0\x9F\xA7\xA1" << "\n";
+                token = "\xF0\x9F\xA7\xA1";
+                tokens.push_back({myTokenType::Continue, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x93\x8C") {  // 📌
+                std::cout << "its a static" << "\xF0\x9F\x93\x8C" << "\n";
+                token = "\xF0\x9F\x93\x8C";
+                tokens.push_back({myTokenType::Static, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\xA4\x94") {  // 🤔
+                std::cout << "its a if" << "\xF0\x9F\xA4\x94" << "\n";
+                token = "\xF0\x9F\xA4\x94";
+                tokens.push_back({myTokenType::If, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x98\x85") {  // 😅
+                std::cout << "its a else" << "\xF0\x9F\x98\x85" << "\n";
+                token = "\xF0\x9F\x98\x85";
+                tokens.push_back({myTokenType::Else, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x94\x99") {  // 🔙
+                std::cout << "its a return" << "\xF0\x9F\x94\x99" << "\n";
+                token = "\xF0\x9F\x94\x99";
+                tokens.push_back({myTokenType::Return, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x91\x86") {  // 👆
+                std::cout << "its a this" << "\xF0\x9F\x91\x86" << "\n";
+                token = "\xF0\x9F\x91\x86";
+                tokens.push_back({myTokenType::This, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x8D\xB4") {  // 🍴
+                std::cout << "its a try" << "\xF0\x9F\x8D\xB4" << "\n";
+                token = "\xF0\x9F\x8D\xB4";
+                tokens.push_back({myTokenType::Try, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x8E\xAF") {  // 🎯
+                std::cout << "its a throw" << "\xF0\x9F\x8E\xAF" << "\n";
+                token = "\xF0\x9F\x8E\xAF";
+                tokens.push_back({myTokenType::Throw, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x8F\xAB") {  // 🏫
+                std::cout << "its a class" << "\xF0\x9F\x8F\xAB" << "\n";
+                token = "\xF0\x9F\x8F\xAB";
+                tokens.push_back({myTokenType::Class, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x94\x91") {  // 🔑
+                std::cout << "its a private" << "\xF0\x9F\x94\x91" << "\n";
+                token = "\xF0\x9F\x94\x91";
+                tokens.push_back({myTokenType::AccessModifier, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x8F\xAC") {  // 🏬
+                std::cout << "its a struct" << "\xF0\x9F\x8F\xAC" << "\n";
+                token = "\xF0\x9F\x8F\xAC";
+                tokens.push_back({myTokenType::Struct, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x8C\x90") {  // 🌐
+                std::cout << "its a global" << "\xF0\x9F\x8C\x90" << "\n";
+                token = "\xF0\x9F\x8C\x90";
+                tokens.push_back({myTokenType::Global, token, line});
+                i += 3;
+            } else {  
+                std::string emoji = input.substr(i, 7);
+                if (emoji == "\xF0\x9F\x97\x83\xEF\xB8\x8F") {  //🗃️
+                    std::cout << "its a array" << "\xF0\x9F\x97\x83\xEF\xB8\x8F" << "\n";
+                    token = "\xF0\x9F\x97\x83\xEF\xB8\x8F";
+                    tokens.push_back({myTokenType::DT, token, line}); 
+                    i += 6;
+                } else if (emoji == "\xF0\x9F\x96\xA8\xEF\xB8\x8F") {  // 🖨️
+                    std::cout << "its a print" << "\xF0\x9F\x96\xA8\xEF\xB8\x8F" << "\n";
+                    token = "\xF0\x9F\x96\xA8\xEF\xB8\x8F";
+                    tokens.push_back({myTokenType::Print, token, line});
+                    i += 6;
+                }
+                else if (emoji == "\xF0\x9F\x8F\xB3\xEF\xB8\x8F") {  // 🏳️
+                    std::cout << "its a default" << "\xF0\x9F\x8F\xB3\xEF\xB8\x8F" << "\n";
+                    token = "\xF0\x9F\x8F\xB3\xEF\xB8\x8F";
+                    tokens.push_back({myTokenType::Default, token, line});
+                    i += 6;
+                }
+                else if (emoji == "\xF0\x9F\x8D\xBD\xEF\xB8\x8F") {  // 🍽️
+                    std::cout << "its a catch" << "\xF0\x9F\x8D\xBD\xEF\xB8\x8F" << "\n";
+                    token = "\xF0\x9F\x8D\xBD\xEF\xB8\x8F";
+                    tokens.push_back({myTokenType::Catch, token, line});
+                    i += 6;
+                }
+                else if (emoji == "\xF0\x9F\x96\xA5\xEF\xB8\x8F") {  // 🖥️
+                    std::cout << "its a interface" << "\xF0\x9F\x96\xA5\xEF\xB8\x8F" << "\n";
+                    token = "\xF0\x9F\x96\xA5\xEF\xB8\x8F";
+                    tokens.push_back({myTokenType::Interface, token, line});
+                    i += 6;
+                }else {  
+                    std::string emoji = input.substr(i, 18);
+                    std::cout << "its a extends" << "\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA6" << "\n";
+                    token = "\xF0\x9F\x91\xA8\xE2\x80\x8D\xF0\x9F\x91\xA9\xE2\x80\x8D\xF0\x9F\x91\xA6";
+                    tokens.push_back({myTokenType::Extends, token, line});
+                    i += 17;
+                }
+            }
+            
+            token.clear();
         }
-        else if (firstByte == 0xE2) { 
-            string emoji = input.substr(i, 3);
-
-            if (emoji == "\xE2\x9C\x85") {
-                cout << "its a True" << "\xE2\x9C\x85" << "\n";
-                token = "true";
-                tokens.push_back({myTokenType::LITERAL, token, line}); 
-            }
-            else if (emoji == "\xE2\x9D\x8C") {
-                cout << "its a False" << "\xE2\x9D\x8C" << "\n";
-                token = "false";
-                tokens.push_back({myTokenType::LITERAL, token, line}); 
-            }
-            else {
-                cout << "c is 3 byte Emoji:" << emoji << "\n";
-                token = "keyword";
-                tokens.push_back({myTokenType::KEYWORD, token, line}); 
-            }
-            i += 2;
-        }
-// ---------------------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------------------
 
         if (c[0] == '\n') { 
             line++;
@@ -120,12 +356,12 @@ vector<Token> tokenize(const string &input) {
 
         // Comments
         if (input.substr(i, 2) == "//") {
-            cout << "Is a Comment\n";
+            std::cout << "Is a Comment\n";
             while (i < input.size() && input[i] != '\n') i++;
             continue;
         }
         if (input.substr(i, 2) == "/*") {
-            cout << "Is a Comment\n";
+            std::cout << "Is a Comment\n";
             i += 2;
             while (i + 1 < input.size() && input.substr(i, 2) != "*/") {
                 if (input[i] == '\n') line++; // 🔥 Count lines inside block comment
@@ -137,7 +373,7 @@ vector<Token> tokenize(const string &input) {
 
         // String literals
         if (c[0] == '"') {
-            cout << "Is a String literal\n";
+            std::cout << "Is a String literal\n";
             size_t start = i;
             token += c;
             i++;
@@ -159,9 +395,9 @@ vector<Token> tokenize(const string &input) {
             }
 
             if (isValidString) {
-                tokens.push_back({myTokenType::LITERAL, token, line}); // 🔥
+                tokens.push_back({myTokenType::Const, token, line}); // 🔥
             } else {
-                cout << "Error: Unmatched double quote found. Skipping invalid string literal.\n";
+                std::cout << "Error: Unmatched double quote found. Skipping invalid string literal.\n";
                 i = start; // Reset i to the original position before "
                 line = line - numbToKeepTrackOfLinesInStringInCaseOfReset;
             }
@@ -173,14 +409,14 @@ vector<Token> tokenize(const string &input) {
 
         // Floating point and integer literals
         if (isdigit(c[0])) {
-            cout << "Is a Float or Integer\n";
+            std::cout << "Is a Float or Integer\n";
             token += c;
             bool isFloat = false;
-            while (i + 1 < input.size() && (isdigit(input[i + 1]) || input[i + 1] == '.')) {
+            while (i + 1 < input.size() && (isdigit(input[i + 1]) || input[i + 1] == '.' && !isFloat)) {
                 if (input[i + 1] == '.') isFloat = true;
                 token += input[++i];
             }
-            tokens.push_back({myTokenType::LITERAL, token, line}); // 🔥
+            tokens.push_back({myTokenType::Const, token, line}); // 🔥
             token.clear();
             i++;
             continue;
@@ -188,15 +424,18 @@ vector<Token> tokenize(const string &input) {
 
         // Identifiers
         if (isalpha(c[0])) { // First char must be a letter (a-z or A-Z)
-            cout << "Is an Identifier\n";
+            std::cout << "Is an Identifier\n";
             token += c[0];
             i++;
             while (i < input.size() && (isalpha(input[i]) || input[i] == '_')) {
                 token += input[i++];
             }
-            if (regex_match(token, idenPattern)) {
-                tokens.push_back({myTokenType::IDENTIFIER, token, line}); // 🔥
-            }
+            // if (regex_match(token, idenPattern)) {
+                std::cout << "identifier pushed\n";
+                tokens.push_back({myTokenType::IDENTIFIER, token, line}); // 
+            // }else{
+            //     std::cout << "Regex Failed\n";
+            // }
             token.clear();
             continue;
         }
@@ -204,9 +443,9 @@ vector<Token> tokenize(const string &input) {
 
         // Operators
         if (regex_match(c, operatorPattern)) {
-            cout << "Is a Operator\n";
+            std::cout << "Is a Operator\n";
             token += c;
-            if (i + 1 < input.size() && regex_match(string(1, input[i + 1]), operatorPattern)) {
+            if (i + 1 < input.size() && std::regex_match(std::string(1, input[i + 1]), operatorPattern)) {
                 token += input[++i];
             }
             tokens.push_back({myTokenType::OPERATOR, token, line}); // 🔥
@@ -217,7 +456,7 @@ vector<Token> tokenize(const string &input) {
 
         // Separators
         if (regex_match(c, separatorPattern)) {
-            cout << "Is a Separator\n";
+            std::cout << "Is a Separator\n";
             tokens.push_back({myTokenType::SEPARATOR, c, line}); // 🔥
             i++;
             continue;
@@ -227,86 +466,17 @@ vector<Token> tokenize(const string &input) {
     }
     return tokens;
 }
-
-    // Main function
-    // int main() {
-    //     SetConsoleOutputCP(CP_UTF8);
-    //     // ❌✅
-    //     std::string content = R"(
-    //                             🏫 A_B_ _C::56BCA
-    //                             🔁(a<<==b!!&&=56bc
-    //                             🔤s str"abc+=56xy+=75\\"+=
-    //                             a+'++'\n'\\'\\'++'++'r
-    //                             a== 1 " 1 abc//xyz
-    //                             🔙 a.77b.7bc.88.99.5\\a=b=c
-    //                             🤔😅(( /*a==b+=***//a++
-    //                         )";
-        
-                                                                                                    
-    //     std::cout << "Input Content:\n" << content << "\n\n";
-    //     // Tokenize the input
-    //     vector<Token> tokens = tokenize(content);
-
-    //     // Print tokens
-    //     cout << "---------------------------------Printing Tokens---------------------------------\n";
-    //     for (const Token &t : tokens) {
-    //         std::cout << "Line " << t.line << " -> " << tokenTypeToString(t.type) << ": " << t.value << std::endl;
-    //     }
-
-    //     return 0;
-    // }
-
-int main() {
-    SetConsoleOutputCP(CP_UTF8);
-
-    string content;
-    string line;
-    ifstream inputFile("codeInput.cpp");
-
-    if (!inputFile) {
-        cerr << "Error opening file.\n";
-        return 1;
-    }
-
-    // Read the file line by line
-    //  while (getline(inputFile, line, '\n')) { //delimiter
-    while (getline(inputFile, line)) {
-        // Process each line
-        cout << "Line: " << line << endl;
-        content += line + '\n';
-
-    }
-
-    inputFile.close();  // Don't forget to close the file!
-
-    std::cout << "Input Content:\n" << content << "\n\n";
-
-    // Tokenize the input
-    vector<Token> tokens = tokenize(content);
-
-    // Print tokens
-    cout << "---------------------------------Printing Tokens---------------------------------\n";
-    for (const Token &t : tokens) {
-        std::cout << "Line " << t.line << " -> " << tokenTypeToString(t.type) << ": " << t.value << std::endl;
-    }
-    cout << "Testing Token Index1:" <<tokens[1].value << endl;
-    cout << "Testing Token Index2:" <<tokens[2].value << endl;
-    cout << "Testing Token Index9:" <<tokens[9].value << endl;
-    cout << "Total tokens: " << tokens.size() << endl;
-
-    SA parser(tokens);
-    return 0;
-}
+///------------------------------------------------------------------------------------------------------------------------
 ///SYNTAX ANALYZER
 class SA {
     int index = 0; // Current token index
-    vector<Token> tokens;
+    std::vector<Token> tokens;
     public:
     // Constructor for SA to accept tokens
-    SA(const vector<Token>& t) : tokens(t) {}
+    SA(const std::vector<Token>& t) : tokens(t) {}
     // <program> -> <dec> <mainTerminal> <dec>
     bool program() {
-        if (tokens[index].type == myTokenType::ACCESSMODIFIER || tokens[index].type == myTokenType::ACCESSMODIFIER ||
+        if (tokens[index].type == myTokenType::AccessModifier || tokens[index].type == myTokenType::AccessModifier ||
             tokens[index].type == myTokenType::DT || tokens[index].type == myTokenType::ID) {
             if (dec()) {
                 if (mainTerminal()) {
@@ -318,10 +488,10 @@ class SA {
         }
         return false;
     }
-    
+
     // <dec> ->  <struct_dec> | <struct_children> | <interface> | ε
     bool dec() {
-        if (tokens[index].type == myTokenType::ACCESSMODIFIER || tokens[index].type == myTokenType::ACCESSMODIFIER) {
+        if (tokens[index].type == myTokenType::AccessModifier || tokens[index].type == myTokenType::AccessModifier) {
             if (struct_dec()) {
                 return true;
             }
@@ -339,7 +509,7 @@ class SA {
         // else if (/* ε case: check if current token is FIRST of next rule */) {
         //     return true;
         // }
-    
+
         return false;
     }
 
@@ -370,8 +540,8 @@ class SA {
     }
     // <struct_dec> -> <access_modifier> struct ID <extends> { <struct_body>}
     bool struct_dec() { 
-        if (tokens[index].type == myTokenType::ACCESSMODIFIER) {  // Empty if to check FIRST set
-            if (tokens[index].type == myTokenType::ACCESSMODIFIER) {
+        if (tokens[index].type == myTokenType::AccessModifier) {  // Empty if to check FIRST set
+            if (tokens[index].type == myTokenType::AccessModifier) {
                 index++; 
                 if (tokens[index].type == myTokenType::Class) {
                     index++; 
@@ -394,14 +564,14 @@ class SA {
     }
     // <access_modifier> -> public | private
     bool access_modifier() {
-        if (tokens[index].type == myTokenType::ACCESSMODIFIER) {
-            if (tokens[index].type == myTokenType::ACCESSMODIFIER) {
+        if (tokens[index].type == myTokenType::AccessModifier) {
+            if (tokens[index].type == myTokenType::AccessModifier) {
                 index++; 
                 return true;
             } 
         }
-        if (tokens[index].type == myTokenType::ACCESSMODIFIER) {
-            if (tokens[index].type == myTokenType::ACCESSMODIFIER) {
+        if (tokens[index].type == myTokenType::AccessModifier) {
+            if (tokens[index].type == myTokenType::AccessModifier) {
                 index++; 
                 return true;
             } 
@@ -425,7 +595,7 @@ class SA {
         }   
         return false; 
     }
-    
+
     // <struct_body> -> <struct_children> <struct_body_tail>
     bool struct_body() {
         if (tokens[index].type == myTokenType::DT || tokens[index].type == myTokenType::ID ) {  // Empty if to check FIRST set
@@ -461,7 +631,7 @@ class SA {
         }
         return false;
     }
-    
+
     // <struct_body_tail> -> <struct_body> | ε
     bool struct_body_tail() {
         if (tokens[index].type == myTokenType::DT || tokens[index].type == myTokenType::ID) {  // Empty if to check FIRST set
@@ -514,7 +684,7 @@ class SA {
         }
         return false;
     }
-    
+
     // <interface_inherit2> -> , ID <interface_inherit2> | null
     bool interface_inherit2() {
         if (tokens[index].type == myTokenType::Comma) {  // Empty if to check FIRST set
@@ -533,7 +703,7 @@ class SA {
         }
         return false;  // Return false if none of the conditions are met
     }
-    
+
     // <interface_body> -> <dt_dec> | DT ID ( <param_list> );
     bool interface_body() {
         if (tokens[index].type == myTokenType::Equal || tokens[index].type == myTokenType::SemiColon || tokens[index].type == myTokenType::CloseCurlyBrkt) {  // Empty if to check FIRST set
@@ -612,8 +782,8 @@ class SA {
     }
     // <Const_or_ID> -> Const | ID
     bool Const_or_ID() {
-        if (tokens[index].type == myTokenType::IntConst ||tokens[index].type == myTokenType::FloatConst || tokens[index].type == myTokenType::CharConst || tokens[index].type == myTokenType::BoolConst || tokens[index].type == myTokenType::StringConst  ) { // Empty check for FIRST set of the rule
-            if (tokens[index].type == myTokenType::IntConst ||tokens[index].type == myTokenType::FloatConst || tokens[index].type == myTokenType::CharConst || tokens[index].type == myTokenType::BoolConst || tokens[index].type == myTokenType::StringConst  ) { // Empty check for FIRST set of the rule
+        if (tokens[index].type == myTokenType::Const ) { // Empty check for FIRST set of the rule
+            if (tokens[index].type == myTokenType::Const  ) { // Empty check for FIRST set of the rule
                 index++;
                 return true;
             }
@@ -691,7 +861,7 @@ class SA {
                 }
             }
         }
-    
+
         return false; 
     }
     // <arr_item> -> <Const_or_ID>  | <arr_row>
@@ -706,7 +876,7 @@ class SA {
                 return true;
             }
         }
-    
+
         return false;
     }
     // <arr_row> -> { <arr_items> }
@@ -722,7 +892,7 @@ class SA {
                 }
             }
         }
-    
+
         return false;
     }
     // <arr_type> -> DT | ID
@@ -739,7 +909,7 @@ class SA {
                 return true;
             }
         }
-    
+
         return false;
     }
     // <SST> -> <while_loop> | <for_loop> | <if> | <do_while> | <Expr> | <try> | <throw> | <return> | <continue> | <break> | <dt_dec> | <func_dec> | <func_call> 
@@ -809,7 +979,7 @@ class SA {
                 return true;
             }
         }
-    
+
         return false;
     }
     // <MST> -> <SST><MST> | ε
@@ -875,9 +1045,9 @@ class SA {
 
         //     }
         // }
-    
+
         return false;
-}
+    }
     // <ROP> -> RO1 | RO2
     bool ROP() {
         if (tokens[index].type == myTokenType::RO1) {
@@ -1111,7 +1281,7 @@ class SA {
         }
         return false;
     }
-    
+
     // <this_rule> -> this ID id_or_func_call ;
     bool this_rule() {
         if (tokens[index].type == myTokenType::This) {
@@ -1205,7 +1375,7 @@ class SA {
             } 
         }  // Check if the token is a constant
         else if (tokens[index].type == myTokenType::ID) {
-             if (tokens[index].type == myTokenType::ID) {  // Check if the token is an identifier
+            if (tokens[index].type == myTokenType::ID) {  // Check if the token is an identifier
                 index++;  // Move to the next token
                 return true;
             }
@@ -1245,7 +1415,7 @@ class SA {
         //     return true;
         // }
         else if (tokens[index].type == myTokenType::SemiColon) {
-             if (tokens[index].type == myTokenType::SemiColon) {
+            if (tokens[index].type == myTokenType::SemiColon) {
                 return true;
             }
         }
@@ -1396,9 +1566,9 @@ class SA {
                 return true;
             }
         }  // Check for Const type
-    
+
         else if (tokens[index].type == myTokenType::New) {
-             if (tokens[index].type == myTokenType::New) {  // Check for "new" keyword
+            if (tokens[index].type == myTokenType::New) {  // Check for "new" keyword
                 index++;
                 if (tokens[index].type == myTokenType::ID) {  // Check for ID after "new"
                     index++;
@@ -1414,10 +1584,10 @@ class SA {
                 }
             }
         }  // Check for "new" keyword
-    
+
         return false;
     }
-    
+
     // <func_dec> -> ( <param_list> ) <Body>
     bool func_dec() {
         if (tokens[index].type == myTokenType::OpenRoundBrkt) {
@@ -1540,7 +1710,7 @@ class SA {
         }
         return false;
     }
-    
+
     bool Expr(){
         return false;
     }
@@ -1560,3 +1730,74 @@ class SA {
 
 
 };
+
+// Main function
+// int main() {
+//     SetConsoleOutputCP(CP_UTF8);
+//     // ❌✅
+//     std::string content = R"(
+//                             🏫 A_B_ _C::56BCA
+//                             🔁(a<<==b!!&&=56bc
+//                             🔤s str"abc+=56xy+=75\\"+=
+//                             a+'++'\n'\\'\\'++'++'r
+//                             a== 1 " 1 abc//xyz
+//                             🔙 a.77b.7bc.88.99.5\\a=b=c
+//                             🤔😅(( /*a==b+=***//a++
+//                         )";
+    
+                                                                                                
+//     std::cout << "Input Content:\n" << content << "\n\n";
+//     // Tokenize the input
+//     vector<Token> tokens = tokenize(content);
+
+//     // Print tokens
+//     cout << "---------------------------------Printing Tokens---------------------------------\n";
+//     for (const Token &t : tokens) {
+//         std::cout << "Line " << t.line << " -> " << tokenTypeToString(t.type) << ": " << t.value << std::endl;
+//     }
+
+//     return 0;
+// }
+
+int main() {
+    SetConsoleOutputCP(CP_UTF8);
+
+    std::string content;
+    std::string line;
+    std::ifstream inputFile("codeInput.cpp");
+
+    if (!inputFile) {
+        std::cerr << "Error opening file.\n";
+        return 1;
+    }
+
+    // Read the file line by line
+    //  while (getline(inputFile, line, '\n')) { //delimiter
+    while (std::getline(inputFile, line)) {
+        // Process each line
+        std::cout << "Line: " << line << std::endl;
+        content += line + '\n';
+
+    }
+
+    inputFile.close();  // Don't forget to close the file!
+
+    std::cout << "Input Content:\n" << content << "\n\n";
+
+    // Tokenize the input
+    std::vector<Token> tokens = tokenize(content);
+
+    // Print tokens
+    std::cout << "---------------------------------Printing Tokens---------------------------------\n";
+    for (const Token &t : tokens) {
+        std::cout << "Line " << t.line << " -> " << tokenTypeToString(t.type) << ": " << t.value << std::endl;
+    }
+    std::cout << "Testing Token Index1:" <<tokens[0].value << std::endl;
+    std::cout << "Testing Token Index1:" <<tokens[1].value << std::endl;
+    std::cout << "Testing Token Index2:" <<tokens[2].value << std::endl;
+    std::cout << "Testing Token Index9:" <<tokens[9].value << std::endl;
+    std::cout << "Total tokens: " << tokens.size() << std::endl;
+
+    SA parser(tokens);
+    return 0;
+}
