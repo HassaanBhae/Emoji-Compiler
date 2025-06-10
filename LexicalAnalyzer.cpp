@@ -143,13 +143,13 @@ std::vector<Token> tokenize(const std::string &input) {
         //IF Starts with E2 BYTE
         if (firstByte == 0xE2) { 
             std::string emoji = input.substr(i, 3);
-            if (emoji == "\xE2\x9C\x85") {      //✅
+            if (emoji == "\xE2\x9C\x85") {           //✅
                 std::cout << "its a True" << "\xE2\x9C\x85" << "\n";
                 token = "\xE2\x9C\x85";
                 tokens.push_back({myTokenType::Const, token, line}); 
                 i += 2;
             }
-            else if (emoji == "\xE2\x9D\x8C") {         //❌
+            else if (emoji == "\xE2\x9D\x8C") {      //❌
                 std::cout << "its a False" << "\xE2\x9D\x8C" << "\n";
                 token = "\xE2\x9D\x8C";
                 tokens.push_back({myTokenType::Const, token, line}); 
@@ -194,6 +194,11 @@ std::vector<Token> tokenize(const std::string &input) {
                 std::cout << "its a float" << "\xF0\x9F\x8C\x8A" << "\n";
                 token = "\xF0\x9F\x8C\x8A";
                 tokens.push_back({myTokenType::DT, token, line});
+                i += 3;
+            } else if (emoji == "\xF0\x9F\x8F\x81") {  // 🏁
+                std::cout << "its a main" << "\xF0\x9F\x8C\x8A" << "\n";
+                token = "\xF0\x9F\x8F\x81";
+                tokens.push_back({myTokenType::Main, token, line});
                 i += 3;
             } else if (emoji == "\xF0\x9F\x87\xA9") {  // 🇩
                 std::cout << "its a double" << "\xF0\x9F\x87\xA9" << "\n";
@@ -296,9 +301,9 @@ std::vector<Token> tokenize(const std::string &input) {
                 tokens.push_back({myTokenType::Struct, token, line});
                 i += 3;
             } else if (emoji == "\xF0\x9F\x8C\x90") {  // 🌐
-                std::cout << "its a global" << "\xF0\x9F\x8C\x90" << "\n";
+                std::cout << "its a public" << "\xF0\x9F\x8C\x90" << "\n";
                 token = "\xF0\x9F\x8C\x90";
-                tokens.push_back({myTokenType::Global, token, line});
+                tokens.push_back({myTokenType::AccessModifier, token, line});
                 i += 3;
             } else {  
                 std::string emoji = input.substr(i, 7);
@@ -342,7 +347,15 @@ std::vector<Token> tokenize(const std::string &input) {
             token.clear();
         }
     // ---------------------------------------------------------------------------------------------------
-
+        if(c[0] == '$'){
+            std::cout << "Is an End Marker\n";
+            token = '$';
+            tokens.push_back({myTokenType::$, token, line}); // 🔥
+            token.clear();
+            i++;
+            continue;
+            continue;
+        }
         if (c[0] == '\n') { 
             line++;
             i++;
@@ -432,7 +445,7 @@ std::vector<Token> tokenize(const std::string &input) {
             }
             // if (regex_match(token, idenPattern)) {
                 std::cout << "identifier pushed\n";
-                tokens.push_back({myTokenType::IDENTIFIER, token, line}); // 
+                tokens.push_back({myTokenType::ID, token, line}); // 
             // }else{
             //     std::cout << "Regex Failed\n";
             // }
@@ -457,12 +470,22 @@ std::vector<Token> tokenize(const std::string &input) {
         // Separators
         if (regex_match(c, separatorPattern)) {
             std::cout << "Is a Separator\n";
-            tokens.push_back({myTokenType::SEPARATOR, c, line}); // 🔥
-            i++;
-            continue;
+            // tokens.push_back({myTokenType::SEPARATOR, c, line}); // 🔥
+            switch(c[0]){
+                case '(': tokens.push_back({myTokenType::OpenRoundBrkt, "(", line}); break;
+                case ')': tokens.push_back({myTokenType::CloseRoundBrkt, ")", line}); break;
+                case '{': tokens.push_back({myTokenType::OpenCurlyBrkt, "{", line}); break;
+                case '}': tokens.push_back({myTokenType::CloseCurlyBrkt, "}", line}); break;
+                case '[': tokens.push_back({myTokenType::OpenSqrBrkt, "[", line}); break;
+                case ']': tokens.push_back({myTokenType::CloseSqrBrkt, "]", line}); break;
+                case ';': tokens.push_back({myTokenType::SemiColon, ";", line}); break;
+                case ',': tokens.push_back({myTokenType::Comma, ",", line}); break;
+                case '.': tokens.push_back({myTokenType::Dot, ".", line}); break;
+                default: break; // not a separator
+            }
         }
-
         i++;
+        continue;
     }
     return tokens;
 }
@@ -473,49 +496,64 @@ class SA {
     std::vector<Token> tokens;
     public:
     // Constructor for SA to accept tokens
-    SA(const std::vector<Token>& t) : tokens(t) {}
+    SA(const std::vector<Token>& t) {
+        tokens = t;
+        index = 0;
+    }
     // <program> -> <dec> <mainTerminal> <dec>
     bool program() {
-        if (tokens[index].type == myTokenType::AccessModifier || tokens[index].type == myTokenType::AccessModifier ||
-            tokens[index].type == myTokenType::DT || tokens[index].type == myTokenType::ID) {
-            if (dec()) {
-                if (mainTerminal()) {
-                    if (dec()) {
-                        return true;
-                    }
+        if (dec()) {
+            if (mainTerminal()) {
+                if (dec()) {
+                    // std::cout << "\n program true";
+                    return true;
+                }else{
+                    return false;
                 }
             }
         }
+        std::cerr << "Syntax error at token index: " << index << " line: " << tokens[index].line
+          << " Value: " << tokens[index].value << " Type: " << tokenTypeToString(tokens[index].type)  << std::endl;
         return false;
     }
 
     // <dec> ->  <struct_dec> | <struct_children> | <interface> | ε
     bool dec() {
-        if (tokens[index].type == myTokenType::AccessModifier || tokens[index].type == myTokenType::AccessModifier) {
+        if (index >= tokens.size()) {
+            return true; // ε-production 
+        }
+        if (tokens[index].type == myTokenType::AccessModifier) {
             if (struct_dec()) {
+                // std::cout << "\n dec true\n";
                 return true;
             }
         }
         else if (tokens[index].type == myTokenType::DT || tokens[index].type == myTokenType::ID) {
             if (struct_children()) {
+                // std::cout << "\n dec true\n";
                 return true;
             }
         }
-        else if (tokens[index].value == "interface") { // Checking token value
+        else if (tokens[index].type == myTokenType::Interface) {
             if (interfaceFunc()) {
+                // std::cout << "\n dec true\n";
                 return true;
             }
         }
-        // else if (/* ε case: check if current token is FIRST of next rule */) {
-        //     return true;
-        // }
+        else if (tokens[index].type == myTokenType::Main || tokens[index].type == myTokenType::$) {
+            // std::cout << "\n dec true (epsilon)\n";
+            return true; // ε-production
+        }
 
+        // std::cout << "\n dec false\n";
         return false;
     }
 
+
     // <mainTerminal> -> main ( ) { <mst> }
     bool mainTerminal() { 
-
+        // std::cout<< "\nmainTerminal called\n";
+        
         if (tokens[index].type == myTokenType::Main) {
             if (tokens[index].type == myTokenType::Main) {
                 index++; 
@@ -528,6 +566,7 @@ class SA {
                             if (MST()) {
                                 if(tokens[index].type == myTokenType::CloseCurlyBrkt){
                                     index++;
+                                    // std::cout<< "\n mainTerminal true\n";
                                     return true;
                                 }
                             }
@@ -540,10 +579,12 @@ class SA {
     }
     // <struct_dec> -> <access_modifier> struct ID <extends> { <struct_body>}
     bool struct_dec() { 
+        // std::cout<< "\n struct_dec called\n";
+
         if (tokens[index].type == myTokenType::AccessModifier) {  // Empty if to check FIRST set
             if (tokens[index].type == myTokenType::AccessModifier) {
                 index++; 
-                if (tokens[index].type == myTokenType::Class) {
+                if (tokens[index].type == myTokenType::Struct) {
                     index++; 
                     if (tokens[index].type == myTokenType::ID) {
                         index++; 
@@ -552,6 +593,7 @@ class SA {
                             if (struct_body()) {
                                 if (tokens[index].type == myTokenType::CloseCurlyBrkt) {
                                     index++;
+                                    // std::cout<< "\n struct_dec true \n";
                                     return true;
                                 }
                             }
@@ -564,6 +606,8 @@ class SA {
     }
     // <access_modifier> -> public | private
     bool access_modifier() {
+        // std::cout<< "\naccess_modifier called\n";
+
         if (tokens[index].type == myTokenType::AccessModifier) {
             if (tokens[index].type == myTokenType::AccessModifier) {
                 index++; 
@@ -598,6 +642,7 @@ class SA {
 
     // <struct_body> -> <struct_children> <struct_body_tail>
     bool struct_body() {
+        // std::cout << "\nstruct_body called\n";
         if (tokens[index].type == myTokenType::DT || tokens[index].type == myTokenType::ID ) {  // Empty if to check FIRST set
             if (struct_children()) {
                 if (struct_body_tail()) {
@@ -610,20 +655,24 @@ class SA {
 
     // <struct_children> -> DT ID <dt_decORfunc_dec> | <array_dec> | <Constructor>
     bool struct_children() {
+        // std::cout<< "\nstruct_children called\n";
         if (tokens[index].type == myTokenType::DT) {
             if (tokens[index].type == myTokenType::DT) {
-                if (tokens[index + 1].type == myTokenType::ID) {
+                index++;
+                if (tokens[index].type == myTokenType::ID) {
+                    index++;
                     if (dt_decORfunc_dec()) {
+                        // std::cout<< "\nstruct_children true\n";
                         return true;
                     }
                 }
             }
         }
-        else if (tokens[index].type == myTokenType::DT || tokens[index].type == myTokenType::ID) {  // Empty if to check FIRST set for array_dec
-            if (array_dec()) {
-                return true;
-            }
-        }
+        // else if (tokens[index].type == myTokenType::DT || tokens[index].type == myTokenType::ID) {  // Empty if to check FIRST set for array_dec
+        //     if (array_dec()) {
+        //         return true;
+        //     }
+        // }
         else if (tokens[index].type == myTokenType::ID) {  // Empty if to check FIRST set for Constructor
             if (Constructor()) {
                 return true;
@@ -732,6 +781,7 @@ class SA {
     }
     // <dt_decORfunc_dec> -> <func_dec> | <dt_dec>
     bool dt_decORfunc_dec() {
+        // std::cout << "\n dt_decORfunc_dec called \n";
         if (tokens[index].type == myTokenType::OpenRoundBrkt) { // Empty check for FIRST set
             if (func_dec()) {
                 return true;
@@ -739,6 +789,7 @@ class SA {
         }
         if (tokens[index].type == myTokenType::Equal || tokens[index].type == myTokenType::SemiColon || tokens[index].type == myTokenType::CloseCurlyBrkt) {  // Empty if to check FIRST set
             if (dt_dec()) {
+                    // std::cout << "\n dt_decORfunc_dec true\n";
                 return true;
             }
         }
@@ -746,7 +797,8 @@ class SA {
     }
     // <var_init> → = <Const_or_ID> | ε					
     bool var_init() {
-        // if (tokens[index].type == myTokenType::IntConst ||tokens[index].type == myTokenType::FloatConst || tokens[index].type == myTokenType::CharConst || tokens[index].type == myTokenType::BoolConst || tokens[index].type == myTokenType::StringConst  ) { // Empty check for FIRST set of the rule
+        // std::cout << "\n var_init called\n";
+        // if (tokens[index].type == myTokenType::Const ||tokens[index].type == myTokenType::FloatConst || tokens[index].type == myTokenType::CharConst || tokens[index].type == myTokenType::BoolConst || tokens[index].type == myTokenType::StringConst  ) { // Empty check for FIRST set of the rule
         if (tokens[index].type == myTokenType::Equal   ) {
             if (tokens[index].type == myTokenType::Equal   ) { // Empty check for FIRST set of the rule
                 index++;
@@ -755,7 +807,8 @@ class SA {
                 }
             }
         } 
-        else if (tokens[index].type == myTokenType::Comma || tokens[index].type == myTokenType::Colon) { // Empty check for ε case
+        else if (tokens[index].type == myTokenType::Comma || tokens[index].type == myTokenType::SemiColon) { // Empty check for ε case
+                // std::cout << "\n var_init true\n";
             return true; 
         }
         return false;
@@ -914,92 +967,34 @@ class SA {
     }
     // <SST> -> <while_loop> | <for_loop> | <if> | <do_while> | <Expr> | <try> | <throw> | <return> | <continue> | <break> | <dt_dec> | <func_dec> | <func_call> 
     bool SST() {
-        if (tokens[index].type == myTokenType::While) {  // Empty if to check FIRST set for <while_loop>
-            if (while_loop()) {
-                return true;
-            }
-        }
-        else if (tokens[index].type == myTokenType::For) {  // Empty if to check FIRST set for <for_loop>
-            if (for_loop()) {
-                return true;
-            }
-        }
-        else if (tokens[index].type == myTokenType::If) {  // Empty if to check FIRST set for <if_else>
-            if (if_statement()) {
-                return true;
-            }
-        }
-        else if (tokens[index].type == myTokenType::Do) {  // Empty if to check FIRST set for <do_while>
-            if (do_while()) {
-                return true;
-            }
-        }
-        // else if (tokens[index].type == myTokenType::) {  // Empty if to check FIRST set for <Expr>
-        //     if (Expr()) {
-        //         return true;
-        //     }
-        // }
-        else if (tokens[index].type == myTokenType::Try) {  // Empty if to check FIRST set for <try>
-            if (try_statement()) {
-                return true;
-            }
-        }
-        else if (tokens[index].type == myTokenType::Throw) {  // Empty if to check FIRST set for <throw>
-            if (throw_statement()) {
-                return true;
-            }
-        }
-        else if (tokens[index].type == myTokenType::Return) {  // Empty if to check FIRST set for <return>
-            if (return_statement()) {
-                return true;
-            }
-        }
-        else if (tokens[index].type == myTokenType::Continue) {  // Empty if to check FIRST set for <continue>
-            if (continue_stmt()) {
-                return true;
-            }
-        }
-        else if (tokens[index].type == myTokenType::Break) {  // Empty if to check FIRST set for <break>
-            if (break_stmt()) {
-                return true;
-            }
-        }
-        if (tokens[index].type == myTokenType::Equal || tokens[index].type == myTokenType::SemiColon || tokens[index].type == myTokenType::CloseCurlyBrkt) {  // Empty if to check FIRST set
-            if (dt_dec()) {
-                return true;
-            }
-        }
-        else if (tokens[index].type == myTokenType::OpenCurlyBrkt) {  // Empty if to check FIRST set for <func_dec>
-            if (func_dec()) {
-                return true;
-            }
-        }
-        else if (tokens[index].type == myTokenType::ID) {  // Empty if to check FIRST set for <func_call>
-            if (func_call()) {
-                return true;
-            }
-        }
+        // std::cout << "\n SST called\n";
+        if (tokens[index].type == myTokenType::While) return while_loop();
+        if (tokens[index].type == myTokenType::For) return for_loop();
+        if (tokens[index].type == myTokenType::If) return if_statement();
+        if (tokens[index].type == myTokenType::Do) return do_while();
+        if (tokens[index].type == myTokenType::Try) return try_statement();
+        if (tokens[index].type == myTokenType::Throw) return throw_statement();
+        if (tokens[index].type == myTokenType::Return) return return_statement();
+        if (tokens[index].type == myTokenType::Continue) return continue_stmt();
+        if (tokens[index].type == myTokenType::Break) return break_stmt();
+        if (tokens[index].type == myTokenType::DT) return struct_children();
+        if (tokens[index].type == myTokenType::OpenRoundBrkt || tokens[index].type == myTokenType::ID || tokens[index].type == myTokenType::Const) return Expr(); // or exp()
+        if (tokens[index].type == myTokenType::ID) return func_call();
+        if (tokens[index].type == myTokenType::OpenCurlyBrkt) return func_dec();
 
         return false;
     }
+
     // <MST> -> <SST><MST> | ε
     bool MST() {
-        if (tokens[index].type == myTokenType::While || tokens[index].type == myTokenType::For ||
-            tokens[index].type == myTokenType::If || tokens[index].type == myTokenType::Do ||
-            tokens[index].type == myTokenType::ID || tokens[index].type == myTokenType::Try ||
-            tokens[index].type == myTokenType::Throw || tokens[index].type == myTokenType::Return ||
-            tokens[index].type == myTokenType::Continue || tokens[index].type == myTokenType::Break ||
-            tokens[index].type == myTokenType::DT || tokens[index].type == myTokenType::OpenRoundBrkt) {
-            
-            if (SST()) {
-                if (MST()) {
-                    return true;
-                }
-                return false;
+        // std::cout<< "\n MST called\n";
+        if (SST()) {
+            if (MST()) {
+                return true;
             }
             return false;
         }
-        else if(tokens[index].type == myTokenType::CloseRoundBrkt){
+        else if(tokens[index].type == myTokenType::CloseCurlyBrkt){
             return true;
         }
         return false;  // ε case
@@ -1685,33 +1680,265 @@ class SA {
     }
     // <dt_dec> →  <var_init> <var_init_tail>  ;
     bool dt_dec() {
-        if (tokens[index].type == myTokenType::Equal || 
-            tokens[index].type == myTokenType::While ||
-            tokens[index].type == myTokenType::For ||
-            tokens[index].type == myTokenType::If ||
-            tokens[index].type == myTokenType::Do ||
-            tokens[index].type == myTokenType::ID ||
-            tokens[index].type == myTokenType::Try ||
-            tokens[index].type == myTokenType::Throw ||
-            tokens[index].type == myTokenType::Return ||
-            tokens[index].type == myTokenType::Continue ||
-            tokens[index].type == myTokenType::Break ||
-            tokens[index].type == myTokenType::DT ||
-            tokens[index].type == myTokenType::OpenRoundBrkt 
-        ) {
+        // std::cout << "dt_dec called \n";
             if (var_init()) {
                 if (var_init_tail()) {
                     if (tokens[index].type == myTokenType::SemiColon) {
                         index++;
+                        // std::cout <<"\n dt_dec true\n";
                         return true;
                     }
                 }
+            }
+        return false;
+    }
+    // <Expr> -> <AssignExpr>
+        boolean Expr() {
+    if (tokens[index].type == myTokenType::Increase_Decrease ||
+        tokens[index].type == myTokenType::NOT ||
+        tokens[index].type == myTokenType::ID ||
+        tokens[index].type == myTokenType::This ||
+        tokens[index].type == myTokenType::Const) {
+        
+        if (AssignExpr()) {
+            return true;
+        }
+    }
+
+        return false;
+    }
+    // <AssignExpr> → <OrExpr> <AssignExpr'>
+    bool AssignExpr() {
+        myTokenType type = tokens[index].type;
+
+        if (type == myTokenType::Increase_Decrease ||
+            type == myTokenType::NOT ||
+            type == myTokenType::ID ||
+            type == myTokenType::This ||
+            type == myTokenType::Const) {
+
+            if (OrExpr()) {
+                if (AssignExprPrime()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+    bool AssignExprPrime() {
+        if (tokens[index].type == myTokenType::CompoundAssign) {
+            index++;
+            return AssignExprPrime(); // Left-recursive
+        }
+
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::CloseRoundBrkt || type == myTokenType::SemiColon ||
+            type == myTokenType::CloseSqrBrkt || type == myTokenType::Comma) {
+            return true; // ε-production
+        }
+
+        return false;
+    }
+    bool OrExpr() {
+        myTokenType type = tokens[index].type;
+
+        if (type == myTokenType::Increase_Decrease || type == myTokenType::NOT || type == myTokenType::ID ||
+            type == myTokenType::This ||  type == myTokenType::Const) {
+
+            if (AndExpr()) {
+                return OrExprPrime();
+            }
+        }
+
+        return false;
+    }
+
+    bool OrExprPrime() {
+        if (tokens[index].type == myTokenType::OR) {
+            index++;
+            return AndExpr() && OrExprPrime();
+        }
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::CompoundAssign || type == myTokenType::SemiColon ||
+            type == myTokenType::CloseSqrBrkt || type == myTokenType::CloseRoundBrkt ||
+            type == myTokenType::Comma) {
+            return true;
+        }
+        return false;
+    }
+
+    bool AndExpr() {
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::Increase_Decrease || type == myTokenType::NOT || type == myTokenType::ID ||
+            type == myTokenType::This || 
+            type == myTokenType::Const ) {
+
+            if (EqualityExpr() && AndExprPrime()) {
+                return true;
             }
         }
         return false;
     }
 
-    bool Expr(){
+    bool AndExprPrime() {
+        if (tokens[index].type == myTokenType::AND) {
+            index++;
+            return EqualityExpr() && AndExprPrime();
+        }
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::OR || type == myTokenType::CompoundAssign ||
+            type == myTokenType::SemiColon || type == myTokenType::CloseSqrBrkt ||
+            type == myTokenType::CloseRoundBrkt || type == myTokenType::Comma) {
+            return true;
+        }
+        return false;
+    }
+
+    bool EqualityExpr() {
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::Increase_Decrease || type == myTokenType::NOT || type == myTokenType::ID ||
+            type == myTokenType::This || 
+            type == myTokenType::Const ) {
+
+            if (RelationalExpr() && EqualityExprPrime()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool EqualityExprPrime() {
+        if (tokens[index].type == myTokenType::RO2) {
+            index++;
+            return RelationalExpr() && EqualityExprPrime();
+        }
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::AND || type == myTokenType::OR ||
+            type == myTokenType::CompoundAssign || type == myTokenType::SemiColon ||
+            type == myTokenType::CloseSqrBrkt || type == myTokenType::CloseRoundBrkt ||
+            type == myTokenType::Comma) {
+            return true;
+        }
+        return false;
+    }
+
+    bool RelationalExpr() {
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::Increase_Decrease || type == myTokenType::NOT || type == myTokenType::ID ||
+            type == myTokenType::This || 
+            type == myTokenType::Const ) {
+
+            if (AdditiveExpr() && RelationalExprPrime()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool RelationalExprPrime() {
+        if (tokens[index].type == myTokenType::RO1) {
+            index++;
+            return AdditiveExpr() && RelationalExprPrime();
+        }
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::RO2 || type == myTokenType::AND ||
+            type == myTokenType::OR || type == myTokenType::CompoundAssign ||
+            type == myTokenType::SemiColon || type == myTokenType::CloseSqrBrkt ||
+            type == myTokenType::CloseRoundBrkt || type == myTokenType::Comma) {
+            return true;
+        }
+        return false;
+    }
+
+    bool AdditiveExpr() {
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::Increase_Decrease || type == myTokenType::NOT || type == myTokenType::ID ||
+            type == myTokenType::This || 
+            type == myTokenType::Const ) {
+
+            if (MultiplicativeExpr() && AdditiveExprPrime()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool AdditiveExprPrime() {
+        if (tokens[index].type == myTokenType::AddSub) {
+            index++;
+            return MultiplicativeExpr() && AdditiveExprPrime();
+        }
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::RO1 || type == myTokenType::RO2 ||
+            type == myTokenType::AND || type == myTokenType::OR ||
+            type == myTokenType::CompoundAssign || type == myTokenType::SemiColon ||
+            type == myTokenType::CloseSqrBrkt || type == myTokenType::CloseRoundBrkt ||
+            type == myTokenType::Comma) {
+            return true;
+        }
+        return false;
+    }
+
+    bool MultiplicativeExpr() {
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::Increase_Decrease || type == myTokenType::NOT || type == myTokenType::ID ||
+            type == myTokenType::This || 
+            type == myTokenType::Const) {
+
+            if (UnaryExpr() && MultiplicativeExprPrime()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool MultiplicativeExprPrime() {
+        if (tokens[index].type == myTokenType::MulDivMod) {
+            index++;
+            return UnaryExpr() && MultiplicativeExprPrime();
+        }
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::AddSub || type == myTokenType::RO1 ||
+            type == myTokenType::RO2 || type == myTokenType::AND ||
+            type == myTokenType::OR || type == myTokenType::CompoundAssign ||
+            type == myTokenType::SemiColon || type == myTokenType::CloseSqrBrkt ||
+            type == myTokenType::CloseRoundBrkt || type == myTokenType::Comma) {
+            return true;
+        }
+        return false;
+    }
+
+    bool UnaryExpr() {
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::Increase_Decrease) {
+            index++;
+            return Primary();
+        } else if (type == myTokenType::NOT) {
+            index++;
+            return UnaryExpr();
+        } else if (type == myTokenType::ID || type == myTokenType::This || 
+                type == myTokenType::Const  || type == myTokenType::OpenRoundBrkt) {
+            return Primary();
+        }
+        return false;
+    }
+
+    bool Primary() {
+        myTokenType type = tokens[index].type;
+        if (type == myTokenType::ID || type == myTokenType::This) {
+            index++;
+            return true;
+        } else if (type == myTokenType::Const ) {
+            index++;
+            return true;
+        } else if (type == myTokenType::OpenRoundBrkt) {
+            index++;
+            if (Expr() && tokens[index].type == myTokenType::CloseRoundBrkt) {
+                index++;
+                return true;
+            }
+        }
         return false;
     }
     // <ExprList> -> <Expr> <ExprListTail>
@@ -1764,7 +1991,8 @@ int main() {
 
     std::string content;
     std::string line;
-    std::ifstream inputFile("codeInput.cpp");
+    // std::ifstream inputFile("codeInput.cpp");
+    std::ifstream inputFile("codeInput2.cpp");
 
     if (!inputFile) {
         std::cerr << "Error opening file.\n";
@@ -1792,12 +2020,17 @@ int main() {
     for (const Token &t : tokens) {
         std::cout << "Line " << t.line << " -> " << tokenTypeToString(t.type) << ": " << t.value << std::endl;
     }
-    std::cout << "Testing Token Index1:" <<tokens[0].value << std::endl;
-    std::cout << "Testing Token Index1:" <<tokens[1].value << std::endl;
-    std::cout << "Testing Token Index2:" <<tokens[2].value << std::endl;
-    std::cout << "Testing Token Index9:" <<tokens[9].value << std::endl;
+    // std::cout << "Testing Token Index1:" <<tokens[0].value << std::endl;
+    // std::cout << "Testing Token Index1:" <<tokens[1].value << std::endl;
+    // std::cout << "Testing Token Index2:" <<tokens[2].value << std::endl;
+    // std::cout << "Testing Token Index9:" <<tokens[9].value << std::endl;
     std::cout << "Total tokens: " << tokens.size() << std::endl;
 
     SA parser(tokens);
+    if (parser.program()) {
+        std::cout << "Parsing successful.\n";
+    } else {
+        std::cout << "Parsing failed.\n";
+    }
     return 0;
 }
