@@ -19,14 +19,21 @@ enum class myTokenType { KEYWORD, IDENTIFIER, LITERAL, OPERATOR, SEPARATOR, COMM
     Extends, 
     This,  New,
     Try, Catch, Finally, Throw,
-    Comma, Colon, SemiColon, DBQoute, Qoute,
-    OpenRoundBrkt, CloseRoundBrkt, OpenSqrBrkt, CloseSqrBrkt, OpenCurlyBrkt, CloseCurlyBrkt,
+
+    Comma, Colon, DoubleColon, SemiColon,
+    OpenRoundBrkt, CloseRoundBrkt, 
+    OpenSqrBrkt, CloseSqrBrkt, 
+    OpenCurlyBrkt, CloseCurlyBrkt,
     Dot,
     AddSub, Increase_Decrease, MulDivMod,
+
     RO1, RO2,
     Equal, CompoundAssign,
+
     AND, OR, NOT,Input,Print,
     InvalidInput,
+    InvalidInputOperator,
+    InvalidInputSeperator,
     $, Break, Continue,
     Void , Main,Const,
     object };
@@ -46,12 +53,16 @@ std::regex intPattern(R"(^[+-]?(0|[1-9][0-9]*)$)");
 std::regex floatPattern(R"(^[+-]?([0-9]*\.[0-9]+|[0-9]+\.[0-9]*)$)");
 std::regex stringPattern(R"(^\"(\\.|[^\"])*\"$)");
 std::regex boolPattern(R"(^(✅|❌)$)");
+std::regex charPattern(R"('\\.')");
 // regex idenPattern(R"(^[a-z]+$)");
 // regex idenPattern(R"(^[a-zA-Z]+$)");
 // std::regex idenPattern(R"(^[a-zA-Z][a-zA-Z_]*$)");
 std::regex idenPattern(R"(^[a-zA-Z][a-zA-Z_]*$)");
 std::regex operatorPattern(R"([\+\-\*/%=<>!&|^~]+)");
-std::regex separatorPattern(R"([\(\)\{\}\[\];,.])");
+// std::regex separatorPattern(R"([\(\)\{\}\[\];,.])");
+std::regex separatorPattern(R"([\(\)\{\}\[\];,.:]|::)");
+
+
 
 // Function to convert myTokenType to string
 std::string tokenTypeToString(myTokenType type) {
@@ -92,9 +103,8 @@ std::string tokenTypeToString(myTokenType type) {
         case myTokenType::Throw: return "Throw";
         case myTokenType::Comma: return "Comma";
         case myTokenType::Colon: return "Colon";
+        case myTokenType::DoubleColon: return "DoubleColon";
         case myTokenType::SemiColon: return "SemiColon";
-        case myTokenType::DBQoute: return "DBQoute";
-        case myTokenType::Qoute: return "Qoute";
         case myTokenType::OpenRoundBrkt: return "OpenRoundBrkt";
         case myTokenType::CloseRoundBrkt: return "CloseRoundBrkt";
         case myTokenType::OpenSqrBrkt: return "OpenSqrBrkt";
@@ -115,6 +125,8 @@ std::string tokenTypeToString(myTokenType type) {
         case myTokenType::Input: return "Input";
         case myTokenType::Print: return "Print";
         case myTokenType::InvalidInput: return "InvalidInput";
+        case myTokenType::InvalidInputOperator: return "InvalidInputOperator";
+        case myTokenType::InvalidInputSeperator: return "InvalidInputSeperator";
         case myTokenType::$: return "$";
         case myTokenType::Break: return "Break";
         case myTokenType::Continue: return "Continue";
@@ -183,7 +195,7 @@ std::vector<Token> tokenize(const std::string &input) {
             token.clear();
         }
         //IF Starts with F0 BYTE
-        if (firstByte == 0xF0) { 
+        else if (firstByte == 0xF0) { 
             std::string emoji = input.substr(i, 4);
             if (emoji == "\xF0\x9F\x94\xA2") {  //🔢
                 std::cout << "its a int" << "\xF0\x9F\x94\xA2" << "\n";
@@ -356,28 +368,29 @@ std::vector<Token> tokenize(const std::string &input) {
             continue;
             continue;
         }
-        if (c[0] == '\n') { 
+        //New Line
+        else if (c[0] == '\n') { 
             line++;
             i++;
             continue;
         }
-
-        if (isspace(c[0])) {
+        //Empty Spaces
+        else if (isspace(c[0])) {
             i++;
             continue;
         }
 
         // Comments
-        if (input.substr(i, 2) == "//") {
+        else if (input.substr(i, 2) == "//") {
             std::cout << "Is a Comment\n";
             while (i < input.size() && input[i] != '\n') i++;
             continue;
         }
-        if (input.substr(i, 2) == "/*") {
+        else if (input.substr(i, 2) == "/*") {
             std::cout << "Is a Comment\n";
             i += 2;
             while (i + 1 < input.size() && input.substr(i, 2) != "*/") {
-                if (input[i] == '\n') line++; // 🔥 Count lines inside block comment
+                if (input[i] == '\n') line++; // Count lines inside block comment
                 i++;
             }
             i += 2;
@@ -385,7 +398,7 @@ std::vector<Token> tokenize(const std::string &input) {
         }
 
         // String literals
-        if (c[0] == '"') {
+        else if (c[0] == '"') {
             std::cout << "Is a String literal\n";
             size_t start = i;
             token += c;
@@ -419,9 +432,25 @@ std::vector<Token> tokenize(const std::string &input) {
             i++;
             continue;
         }
+        //Char Literal
+        else if (c[0] == '\'') {
+            std::cout << "Its a character!\n";
+            token += c[0];    
+            // int start = i
+            if(input[i + 1] == '\\' && input[i+3 == '\'']){
+                token = input.substr(i,4);
+                i += 4;
+                tokens.push_back({myTokenType::Const, token, line}); 
+            }else{
+                tokens.push_back({myTokenType::InvalidInput, token, line}); 
+                i++;
+            }
+            token.clear();
+            continue;
+        }
 
         // Floating point and integer literals
-        if (isdigit(c[0])) {
+        else if (isdigit(c[0])) {
             std::cout << "Is a Float or Integer\n";
             token += c;
             bool isFloat = false;
@@ -429,14 +458,14 @@ std::vector<Token> tokenize(const std::string &input) {
                 if (input[i + 1] == '.') isFloat = true;
                 token += input[++i];
             }
-            tokens.push_back({myTokenType::Const, token, line}); // 🔥
+            tokens.push_back({myTokenType::Const, token, line}); 
             token.clear();
             i++;
             continue;
         }
 
         // Identifiers
-        if (isalpha(c[0])) { // First char must be a letter (a-z or A-Z)
+        else if (isalpha(c[0])) { // First char must be a letter (a-z or A-Z)
             std::cout << "Is an Identifier\n";
             token += c[0];
             i++;
@@ -455,35 +484,72 @@ std::vector<Token> tokenize(const std::string &input) {
 
 
         // Operators
-        if (regex_match(c, operatorPattern)) {
+        else if (regex_match(c, operatorPattern)) {
             std::cout << "Is a Operator\n";
-            token += c;
+            token += c[0];
             if (i + 1 < input.size() && std::regex_match(std::string(1, input[i + 1]), operatorPattern)) {
                 token += input[++i];
             }
-            tokens.push_back({myTokenType::OPERATOR, token, line}); // 🔥
+            if(token == "+" || token == "-") {
+                tokens.push_back({myTokenType::AddSub, token, line});
+            } else if (token == "++" || token == "--") {
+                tokens.push_back({myTokenType::Increase_Decrease, token, line});
+            } else if (token == "*" || token == "/" || token == "%") {
+                tokens.push_back({myTokenType::MulDivMod, token, line});
+            } else if (token == "<" || token == ">" || token == "="|| token == "+=" || token == "-=") {
+                tokens.push_back({myTokenType::RO1, token, line});
+            } else if (token == "<=" || token == ">=" || token == "==" || token == "!=") {
+                tokens.push_back({myTokenType::RO2, token, line});
+            } else{
+                tokens.push_back({myTokenType::InvalidInputOperator, token, line}); 
+            }
+
             token.clear();
             i++;
             continue;
         }
 
         // Separators
-        if (regex_match(c, separatorPattern)) {
+        else if (regex_match(c, separatorPattern)) {
             std::cout << "Is a Separator\n";
-            // tokens.push_back({myTokenType::SEPARATOR, c, line}); // 🔥
-            switch(c[0]){
-                case '(': tokens.push_back({myTokenType::OpenRoundBrkt, "(", line}); break;
-                case ')': tokens.push_back({myTokenType::CloseRoundBrkt, ")", line}); break;
-                case '{': tokens.push_back({myTokenType::OpenCurlyBrkt, "{", line}); break;
-                case '}': tokens.push_back({myTokenType::CloseCurlyBrkt, "}", line}); break;
-                case '[': tokens.push_back({myTokenType::OpenSqrBrkt, "[", line}); break;
-                case ']': tokens.push_back({myTokenType::CloseSqrBrkt, "]", line}); break;
-                case ';': tokens.push_back({myTokenType::SemiColon, ";", line}); break;
-                case ',': tokens.push_back({myTokenType::Comma, ",", line}); break;
-                case '.': tokens.push_back({myTokenType::Dot, ".", line}); break;
-                default: break; // not a separator
+            token += c[0];
+            if (token == ":" && i + 1 < input.size() && input[i + 1] == ':') {
+                token += input[i + 1];
+                i++;
             }
+            if (token == ",") {
+                tokens.push_back({myTokenType::Comma, token, line});
+            } else if (token == ":") {
+                tokens.push_back({myTokenType::Colon, token, line});
+            } else if (token == "::") {
+                tokens.push_back({myTokenType::DoubleColon, token, line});
+            } else if (token == ";") {
+                tokens.push_back({myTokenType::SemiColon, token, line});
+            } else if (token == "(") {
+                tokens.push_back({myTokenType::OpenRoundBrkt, token, line});
+            } else if (token == ")") {
+                tokens.push_back({myTokenType::CloseRoundBrkt, token, line});
+            } else if (token == "[") {
+                tokens.push_back({myTokenType::OpenSqrBrkt, token, line});
+            } else if (token == "]") {
+                tokens.push_back({myTokenType::CloseSqrBrkt, token, line});
+            } else if (token == "{") {
+                tokens.push_back({myTokenType::OpenCurlyBrkt, token, line});
+            } else if (token == "}") {
+                tokens.push_back({myTokenType::CloseCurlyBrkt, token, line});
+            } else if (token == ".") {
+                tokens.push_back({myTokenType::Dot, token, line});
+            }else{
+                tokens.push_back({myTokenType::InvalidInputSeperator, c, line}); 
+            }
+            token.clear();
+            i++;
+            continue;
         }
+        else{
+            token.clear();
+        }
+
         i++;
         continue;
     }
@@ -519,6 +585,7 @@ class SA {
 
     // <dec> ->  <struct_dec> | <struct_children> | <interface> | ε
     bool dec() {
+        // std::cout << "\n dec called \n";
         if (index >= tokens.size()) {
             return true; // ε-production 
         }
@@ -579,7 +646,7 @@ class SA {
     }
     // <struct_dec> -> <access_modifier> struct ID <extends> { <struct_body>}
     bool struct_dec() { 
-        // std::cout<< "\n struct_dec called\n";
+        //  std::cout<< "\n struct_dec called\n";
 
         if (tokens[index].type == myTokenType::AccessModifier) {  // Empty if to check FIRST set
             if (tokens[index].type == myTokenType::AccessModifier) {
