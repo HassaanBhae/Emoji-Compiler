@@ -2087,6 +2087,10 @@ int main() {
     for (const Token &t : tokens) {
         std::cout << "Line " << t.line << " -> " << tokenTypeToString(t.type) << ": " << t.value << std::endl;
     }
+    // std::cout << "Testing Token Index1:" <<tokens[0].value << std::endl;
+    // std::cout << "Testing Token Index1:" <<tokens[1].value << std::endl;
+    // std::cout << "Testing Token Index2:" <<tokens[2].value << std::endl;
+    // std::cout << "Testing Token Index9:" <<tokens[9].value << std::endl;
     std::cout << "Total tokens: " << tokens.size() << std::endl;
 
     SA parser(tokens);
